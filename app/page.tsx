@@ -1,94 +1,112 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import { CarCard, CustomFilter, Hero, SearchBar, ShowMore } from '@/components'
+import { fetchCars } from '@/utils'
+import { fuels, yearsOfProduction } from '@/constants'
 import Image from 'next/image'
-import styles from './page.module.css'
 
-export default function Home() {
+export default async function Home() {
+
+  const [allCars, setAllCars] = useState([])
+  const [loading, setLoading] = useState(false)
+
+  //TODO: search states
+  const [manufacturer, setManufacturer] = useState("")
+  const [model, setModel] = useState("")
+
+  //TOOD: filter states
+  const [fuel, setFuel] = useState("")
+  const [year, setYear] = useState(2022)
+
+  //TODO: pagination states
+  const [limit, setLimit] = useState(10)
+
+  //TODO: const to can get the data from the api
+  const getCars = async () => {
+    setLoading(true)
+    try {
+      const result = await fetchCars({
+        manufacturer: manufacturer || '',
+        year: year || 2022,
+        fuel: fuel || '',
+        limit: limit || 10,
+        model: model || ''
+      })
+
+      setAllCars(result)
+    } catch (error) {
+      console.log(error)
+    }
+    finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    getCars()
+  }, [fuel, year, limit, model, manufacturer])
+
+  const isDataEmpty = !Array.isArray(allCars) || allCars.length < 1 || !allCars
+
   return (
-    <main className={styles.main}>
-      <div className={styles.description}>
-        <p>
-          Get started by editing&nbsp;
-          <code className={styles.code}>app/page.tsx</code>
-        </p>
-        <div>
-          <a
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{' '}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className={styles.vercelLogo}
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
-        </div>
-      </div>
-
-      <div className={styles.center}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
-
-      <div className={styles.grid}>
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Docs <span>-&gt;</span>
-          </h2>
-          <p>Find in-depth information about Next.js features and API.</p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Learn <span>-&gt;</span>
-          </h2>
-          <p>Learn about Next.js in an interactive course with&nbsp;quizzes!</p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Templates <span>-&gt;</span>
-          </h2>
-          <p>Explore the Next.js 13 playground.</p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Deploy <span>-&gt;</span>
-          </h2>
-          <p>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
+    <main className="overflow-hidden">
+      <Hero />
+      <div className='mt-12 padding-x padding-y max-width' id='discover'>
+        <div className='home__text-container'>
+          <h1 className='text-4xl font-extrabold'>
+            Car Catalogue
+          </h1>
+          <p className=''>
+            Explore the cars you migth like.
           </p>
-        </a>
+        </div>
+
+        <div className='home__filters'>
+          <SearchBar
+            setManufacturer={setManufacturer}
+            setModel={setModel}
+          />
+          <div className='home__filter-container'>
+            <CustomFilter title="fuel" options={fuels} setFilter={setFuel} />
+            <CustomFilter title="year" options={yearsOfProduction} setFilter={setYear} />
+          </div>
+        </div>
+
+        {allCars.length > 0 ? (
+          <section>
+            <div className='home__cars-wrapper'>
+              {
+                allCars?.map((car) => (
+                  <CarCard car={car} />
+                ))
+              }
+            </div>
+
+            {loading && (
+              <div className='w-full mt-16 flex-center'>
+                <Image 
+                  src="/loader.svg"
+                  alt='loader'
+                  width={50}
+                  height={50}
+                  className='object-contain'
+                />
+              </div>
+            )}
+            <ShowMore
+              pageNumber={limit / 10}
+              isNext={limit > allCars.length}
+              setLimit={setLimit}
+            />
+          </section>
+        ) : (
+          <div className='home__error-container'>
+            <h2 className='text-xl font-bold text-black'>Oops, no results</h2>
+            <p>{allCars?.message}</p>
+          </div>
+        )}
+
       </div>
     </main>
   )
